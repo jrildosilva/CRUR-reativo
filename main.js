@@ -8,6 +8,8 @@ var listaRegistros = {
      usuarios:[]
  }
 
+ var FILTRO = ''
+
  function gravarBD() {
       localStorage.setItem(KEY_BD , JSON.stringify(listaRegistros) )
  }
@@ -18,16 +20,26 @@ function lerBD() {
       if(data){
           listaRegistros = JSON.parse(data)
       } 
-      desenhar
+      desenhar()
+}
 
-
-
+function pesquisar(value){
+      FILTRO = value;
+    desenhar()
 }
 
 function desenhar(){
     const tbody = document.getElementById('listaRegistroBody')
     if(tbody){
-        tbody.innerHTML = listaRegistros.usuarios
+        var data = listaRegistros.usuarios;
+        if(FILTRO.trim()){
+            FILTRO = FILTRO.replace(/á/i, 'a')
+            const expReg = eval(`/${FILTRO.trim().replace(/[^\d\w]+/g,'.*')}/i`)
+            data = data.filter( usuario => {
+                return expReg.test(usuario.nome) || expReg.test(usuario.fone)
+            })
+        }
+        data = data
         .sort( (a, b)  => {
             return a.nome < b.nome ? -1 : 1
         })
@@ -43,7 +55,8 @@ function desenhar(){
                            </td>
             
                         </tr>`
-         } ).join('')
+         } )
+         tbody.innerHTML = data.join('')
     }
 }
 
@@ -61,7 +74,12 @@ function desenhar(){
 
 
  function editUsuarios(id, nome, fone){
-           
+           const usuario = listaRegistros.usuarios.find( usuario => usuario.id == id)
+           usuario.nome = nome
+           usuario.fone = fone
+           gravarBD()
+           desenhar()
+           visualizar('lista')
  }
 
 
@@ -113,7 +131,7 @@ function submeter(e) {
          fone: document.getElementById('fone').value,
      }
      if(data.id){
-          editUsuarios(...data)
+          editUsuarios(data.id, data.nome, data.fone)
      } else{
           insertUsuario( data.nome, data.fone)
      }
@@ -124,4 +142,8 @@ function submeter(e) {
       lerBD()
 
       document.getElementById('cadastroRegistro').addEventListener('submit', submeter)
+      document.getElementById('inputpesquisa').addEventListener('keyup', e => {
+          pesquisar(e.target.value)
+      })
+   
  })
